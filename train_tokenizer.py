@@ -58,35 +58,81 @@ def merge_pair(tokens_list, pair):
     return new_list
 
 
+COMMON_SUFFIXES = {
+    "ing",
+    "ed",
+    "ly",
+    "es",
+    "s",
+    "ion",
+    "al",
+    "er",
+    "or",
+    "ist",
+    "able",
+    "ity",
+}
+COMMON_PREFIXES = {
+    "un",
+    "re",
+    "in",
+    "im",
+    "ir",
+    "dis",
+    "pre",
+    "post",
+    "sub",
+    "inter",
+    "trans",
+}
+
+
+def affix_bonus(token: str) -> float:
+    if any(token.endswith(suffix) for suffix in COMMON_SUFFIXES):
+        return 0.15
+    if any(token.startswith(prefix) for prefix in COMMON_PREFIXES):
+        return 0.15
+    return 0.0
+
+
+def is_word_token(token: str) -> bool:
+    return token.isalpha() and token.strip() == token
+
+
 def pair_score(a: str, b: str, count: int) -> float:
     """Heuristic score for choosing which pair to merge next.
 
-    Gives a small boost to merges that look like word-internal or
-    morpheme-like sequences: both parts alphabetic, one part length>1, etc.
-    This is a lightweight, local heuristic to prefer linguistically useful
-    merges without external data.
+    This boosts frequent alphabetic sequences, common morphological affixes,
+    and cross-word phrase candidates while still respecting exact decoding.
     """
     score = float(count)
-    if a.strip() and b.strip() and a.isalpha() and b.isalpha():
-        score *= 1.2
-    if (a.endswith(" ") or b.startswith(" ")) and not (a.strip() and b.strip()):
-        score *= 0.8
-    if len(a) + len(b) > 64:
-        score *= 0.5
+    combined = a + b
+    alpha_count = sum(ch.isalpha() for ch in combined)
+    if alpha_count >= len(combined) * 0.7 and len(combined) > 2:
+        score *= 1.25
+    score += affix_bonus(a) + affix_bonus(b)
+    if is_word_token(a) and is_word_token(b):
+        score *= 1.15
+    if " " in a or " " in b:
+        # Cross-space merges are valuable for SuperBPE-style tokens.
+        score *= 1.05
+    # penalize very long tokens to avoid rare over-merges
+    score /= (1.0 + (len(combined) - 4) * 0.03)
     return score
 
 
 def train(
     corpus: str,
-    vocab_size: int = 5000,
-    allow_cross_after: int = 1000,
+    vocab_size: int = 10000,
+    allow_cross_after: int = 50,
     min_count: int = 2,
+    max_merge_steps: int = 20000,
 ):
     """Train BPE-like merges with a SuperBPE-style phased cross-boundary policy.
 
-    - allow_cross_after: number of merges to perform before allowing merges
-      that include spaces (cross-word merges).
+    - allow_cross_after: number of merges before allowing space-containing pairs.
     - min_count: minimum pair frequency to consider merging.
+    - max_merge_steps: hard stop to keep training bounded.
     """
     tokens_list = [initial_symbols(line) for line in corpus.splitlines()]
     vocab = set()
@@ -94,7 +140,7 @@ def train(
         vocab.update(tokens)
 
     merges_done = 0
-    while len(vocab) < vocab_size:
+    while len(vocab) < vocab_size and merges_done < max_merge_steps:
         freqs = get_pair_frequencies(tokens_list)
         if not freqs:
             break
