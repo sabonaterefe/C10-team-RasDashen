@@ -15,8 +15,10 @@ This repository presents my implementation of a **SuperBPE tokenizer** for the C
 ## Experimental Workflow
 1. **Tokenizer training (development phase):**
    ```bash
-   python train_tokenizer.py --input debug_corpus.txt --vocab-size 5000 --out tokenizer.json
+   python train_tokenizer.py --input debug_corpus.txt --vocab-size 20000 --repeat 10 --out tokenizer.json
    ```
+
+   Use `--repeat` only for small development corpora; train on the actual target corpus when available.
 
 2. **Evaluation of round‑trip fidelity and token statistics:**
    ```bash
@@ -33,6 +35,13 @@ The competition requires `tokenizer.py` as the submission entry point, with a `T
 
 ## Packaging and Submission
 Submissions must be packaged as a single archive containing `tokenizer.py` at the root. Optional files (e.g., `tokenizer.json`) may be included, but external dependencies or network access are prohibited. The evaluator does not retrain models; all learned assets must be pre‑packaged.
+
+Use `package_submission.py` to create the submission archive, and `package_full_repo.py` to bundle the repository for sharing or backup.
+
+```bash
+python package_submission.py --out submission.zip --model tokenizer.json
+python package_full_repo.py --out project_bundle.zip
+```
 
 ## Submission Criteria
 - Vocabulary size ≤ 20,000 distinct tokens.

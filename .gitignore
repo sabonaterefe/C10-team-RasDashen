@@ -1,5 +1,7 @@
 __pycache__/
 *.pyc
-tokenizer.json
+*.zip
+diagnostics.json
+tmp_*
 .env
 .vscode/

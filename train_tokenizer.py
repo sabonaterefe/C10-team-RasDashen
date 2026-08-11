@@ -19,8 +19,7 @@ from __future__ import annotations
 import argparse
 import collections
 import json
-import re
-from typing import Dict, Tuple
+from typing import Dict
 
 def read_corpus(path: str) -> str:
     with open(path, "r", encoding="utf-8") as f:
@@ -89,52 +88,71 @@ COMMON_PREFIXES = {
 
 def affix_bonus(token: str) -> float:
     if any(token.endswith(suffix) for suffix in COMMON_SUFFIXES):
-        return 0.15
+        return 0.30
     if any(token.startswith(prefix) for prefix in COMMON_PREFIXES):
-        return 0.15
+        return 0.20
     return 0.0
 
 
 def is_word_token(token: str) -> bool:
-    return token.isalpha() and token.strip() == token
+    return token.isalpha() and token == token.strip()
 
 
 def pair_score(a: str, b: str, count: int) -> float:
     """Heuristic score for choosing which pair to merge next.
 
-    This boosts frequent alphabetic sequences, common morphological affixes,
-    and cross-word phrase candidates while still respecting exact decoding.
+    Pairs are scored by their expected token reduction, boosted by
+    linguistically coherent merges and cross-boundary phrase candidates.
     """
-    score = float(count)
     combined = a + b
-    alpha_count = sum(ch.isalpha() for ch in combined)
-    if alpha_count >= len(combined) * 0.7 and len(combined) > 2:
-        score *= 1.25
-    score += affix_bonus(a) + affix_bonus(b)
-    if is_word_token(a) and is_word_token(b):
+    length = len(combined)
+    reduction = len(a) + len(b) - 1
+    score = float(count) * reduction
+
+    alpha_ratio = sum(ch.isalpha() for ch in combined) / max(1, length)
+    if alpha_ratio >= 0.65:
         score *= 1.15
-    if " " in a or " " in b:
-        # Cross-space merges are valuable for SuperBPE-style tokens.
-        score *= 1.05
-    # penalize very long tokens to avoid rare over-merges
-    score /= (1.0 + (len(combined) - 4) * 0.03)
+
+    score += affix_bonus(a) + affix_bonus(b)
+
+    if is_word_token(a) and is_word_token(b):
+        score *= 1.20
+
+    if " " in combined:
+        # Allow cross-space merges after the word-internal phase.
+        score *= 1.15
+        if a.endswith(" ") or b.startswith(" "):
+            score *= 1.05
+
+    if length > 8:
+        score *= 0.92
+    elif length > 5:
+        score *= 0.97
+
     return score
+
+
+PRINTABLE_ASCII = [chr(code) for code in range(32, 127)]
+MAX_DISTINCT_TOKENS = 20000
 
 
 def train(
     corpus: str,
-    vocab_size: int = 10000,
-    allow_cross_after: int = 50,
+    vocab_size: int = 12000,
+    allow_cross_after: int = 0,
     min_count: int = 2,
-    max_merge_steps: int = 20000,
+    max_merge_steps: int = 25000,
+    repeat: int = 1,
 ):
     """Train BPE-like merges with a SuperBPE-style phased cross-boundary policy.
 
     - allow_cross_after: number of merges before allowing space-containing pairs.
     - min_count: minimum pair frequency to consider merging.
     - max_merge_steps: hard stop to keep training bounded.
+    - repeat: how many times to repeat the corpus for stronger pair counts.
     """
-    tokens_list = [initial_symbols(line) for line in corpus.splitlines()]
+    lines = corpus.splitlines()
+    tokens_list = [initial_symbols(line) for _ in range(repeat) for line in lines]
     vocab = set()
     for tokens in tokens_list:
         vocab.update(tokens)
@@ -170,9 +188,21 @@ def train(
     for tokens in tokens_list:
         token_freq.update(tokens)
     sorted_tokens = [t for t, _ in token_freq.most_common()]
-    final_tokens = list(sorted_tokens)
-    if len(final_tokens) > 20000:
-        final_tokens = final_tokens[:20000]
+
+    final_tokens = []
+    seen = set()
+    for token in sorted_tokens:
+        if token not in seen:
+            final_tokens.append(token)
+            seen.add(token)
+            if len(final_tokens) >= MAX_DISTINCT_TOKENS:
+                break
+
+    for ch in PRINTABLE_ASCII:
+        if ch not in seen and len(final_tokens) < MAX_DISTINCT_TOKENS:
+            final_tokens.append(ch)
+            seen.add(ch)
+
     vocab_map = {t: i + 1 for i, t in enumerate(final_tokens)}
     return vocab_map
 
@@ -180,12 +210,23 @@ def train(
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--input", default="debug_corpus.txt")
-    parser.add_argument("--vocab-size", type=int, default=5000)
+    parser.add_argument("--vocab-size", type=int, default=20000)
+    parser.add_argument("--allow-cross-after", type=int, default=0)
+    parser.add_argument("--min-count", type=int, default=2)
+    parser.add_argument("--max-merge-steps", type=int, default=25000)
+    parser.add_argument("--repeat", type=int, default=10)
     parser.add_argument("--out", default="tokenizer.json")
     args = parser.parse_args()
 
     corpus = read_corpus(args.input)
-    vocab_map = train(corpus, args.vocab_size)
+    vocab_map = train(
+        corpus,
+        vocab_size=args.vocab_size,
+        allow_cross_after=args.allow_cross_after,
+        min_count=args.min_count,
+        max_merge_steps=args.max_merge_steps,
+        repeat=args.repeat,
+    )
     with open(args.out, "w", encoding="utf-8") as f:
         json.dump({"vocab": vocab_map}, f, ensure_ascii=False, indent=2)
     print("Wrote", args.out)

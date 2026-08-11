@@ -31,9 +31,8 @@ class Tokenizer:
         if os.path.exists(path):
             with open(path, "r", encoding="utf-8") as f:
                 data = json.load(f)
-            # vocab: token -> id
             self.vocab: Dict[str, int] = dict(data.get("vocab", {}))
-            # ensure all printable ASCII symbols are present in the final vocab
+            # ensure printable ASCII coverage to avoid fallback id collisions
             max_id = max((int(v) for v in self.vocab.values()), default=0)
             for code in range(32, 127):
                 ch = chr(code)
@@ -41,10 +40,10 @@ class Tokenizer:
                     max_id += 1
                     self.vocab[ch] = max_id
             self.id_to_token: Dict[int, str] = {int(v): k for k, v in self.vocab.items()}
+            self._next_fallback_id = max_id + 1
+            self._fallback_ids: Dict[str, int] = {}
         else:
-            # fallback: identity character mapping (lossless)
             self.vocab = {chr(i): i for i in range(32, 127)}
-            # shift ids to start at 1 to leave 0 unused
             self.vocab = {k: (v - 31) for k, v in self.vocab.items()}
             self.id_to_token = {v: k for k, v in self.vocab.items()}
 
@@ -83,8 +82,12 @@ class Tokenizer:
                     ch = text[i]
                     tid = self.vocab.get(ch)
                     if tid is None:
-                        # unseen character: map to integer by ordinal fallback
-                        ids.append(ord(ch))
+                        # unseen character: map to a stable fallback id and preserve it for decoding
+                        if ch not in self._fallback_ids:
+                            self._fallback_ids[ch] = self._next_fallback_id
+                            self.id_to_token[self._next_fallback_id] = ch
+                            self._next_fallback_id += 1
+                        ids.append(self._fallback_ids[ch])
                     else:
                         ids.append(int(tid))
                     i += 1
