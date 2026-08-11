@@ -1,0 +1,4 @@
+This is a sample debug corpus.
+It includes English and bracketed Unicode markers like [U+00E9 LATIN SMALL LETTER E WITH ACUTE].
+Common phrases: bonjour, jambo, habari.
+Newlines and spaces to test boundary handling.
