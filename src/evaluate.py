@@ -9,12 +9,12 @@ from __future__ import annotations
 import argparse
 import json
 import time
-from tokenizer import Tokenizer
+from src.tokenizer import Tokenizer
 
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--model", default="tokenizer.json")
+    parser.add_argument("--model", default="data/tokenizer.json")
     parser.add_argument("--input", default="debug_corpus.txt")
     args = parser.parse_args()
 

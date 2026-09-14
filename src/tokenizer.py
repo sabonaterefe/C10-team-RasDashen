@@ -25,10 +25,20 @@ class Tokenizer:
     """
 
     def __init__(self, model_path: str = None):
-        # load tokenizer.json if present
-        root = os.path.dirname(__file__)
-        path = model_path or os.path.join(root, "tokenizer.json")
-        if os.path.exists(path):
+        # load tokenizer.json if present, preferring the repository data folder
+        src_root = os.path.dirname(__file__)
+        repo_root = os.path.abspath(os.path.join(src_root, ".."))
+        candidate_paths = []
+        if model_path:
+            candidate_paths.append(model_path)
+        candidate_paths.extend(
+            [
+                os.path.join(repo_root, "data", "tokenizer.json"),
+                os.path.join(src_root, "tokenizer.json"),
+            ]
+        )
+        path = next((p for p in candidate_paths if os.path.exists(p)), None)
+        if path is not None:
             with open(path, "r", encoding="utf-8") as f:
                 data = json.load(f)
             self.vocab: Dict[str, int] = dict(data.get("vocab", {}))

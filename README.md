@@ -25,7 +25,7 @@ Typical workflow:
 
 1. Train a tokenizer:
    ```bash
-   python train_tokenizer.py --input debug_corpus.txt --vocab-size 20000 --repeat 10 --out tokenizer.json
+   python src/train_tokenizer.py --input debug_corpus.txt --vocab-size 20000 --repeat 10 --out data/tokenizer.json
    ```
 2. Inspect or verify the learned vocabulary.
 3. Package the final model for submission when ready.
@@ -53,11 +53,11 @@ Run the project in the following order:
 
 1. Create or update the tokenizer model:
    ```bash
-   python train_tokenizer.py --input debug_corpus.txt --vocab-size 20000 --repeat 10 --out tokenizer.json
+   python src/train_tokenizer.py --input debug_corpus.txt --vocab-size 20000 --repeat 10 --out data/tokenizer.json
    ```
 2. Run the evaluation script:
    ```bash
-   python src/evaluate.py --model tokenizer.json --input debug_corpus.txt
+   python src/evaluate.py --model data/tokenizer.json --input debug_corpus.txt
    ```
 3. Run the unit test:
    ```bash
@@ -65,7 +65,7 @@ Run the project in the following order:
    ```
 4. Build a submission archive:
    ```bash
-   python src/package_submission.py --out submission.zip --model tokenizer.json
+   python src/package_submission.py --out submission.zip --model data/tokenizer.json
    ```
 
 ## Cohort Challenges
@@ -90,8 +90,8 @@ The repository includes the required cohort challenge materials in the `doc/` fo
 - `data/` — packaged tokenizer assets
 - `doc/` — submission documentation and requirements
 - `debug_corpus.txt` — local development corpus
-- `tokenizer.py` — root-level compatibility entry point for the repository
-- `train_tokenizer.py` — root-level compatibility entry point for the training script
+- `src/tokenizer.py` — core tokenizer implementation
+- `src/train_tokenizer.py` — training pipeline entry point
 
 ## Notes
 

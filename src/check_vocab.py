@@ -1,6 +1,6 @@
-from tokenizer import Tokenizer
+from src.tokenizer import Tokenizer
 
-t = Tokenizer('tokenizer.json')
+t = Tokenizer('data/tokenizer.json')
 print('vocab size', len(t.vocab))
 for ch in ['A', ' ', '[', ']', '!']:
     print(repr(ch), ch in t.vocab)

@@ -24,7 +24,7 @@ def escape_trunc(s: str, max_len: int = 200) -> str:
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--model", default="tokenizer.json")
+    parser.add_argument("--model", default="data/tokenizer.json")
     parser.add_argument("--input", default="debug_corpus.txt")
     args = parser.parse_args()
 
@@ -44,7 +44,7 @@ def main():
 
         # import tokenizer
         try:
-            from tokenizer import Tokenizer
+            from src.tokenizer import Tokenizer
         except Exception as e:
             diagnostics["error"] = f"import_error: {e}"
             diagnostics["traceback"] = traceback.format_exc()

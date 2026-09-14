@@ -1,6 +1,6 @@
 import unittest
 import json
-from tokenizer import Tokenizer
+from src.tokenizer import Tokenizer
 
 
 class RoundTripTest(unittest.TestCase):
@@ -9,17 +9,17 @@ class RoundTripTest(unittest.TestCase):
             lines = [l.rstrip("\n") for l in f]
         # ensure model exists
         try:
-            with open("tokenizer.json", "r", encoding="utf-8") as f:
+            with open("data/tokenizer.json", "r", encoding="utf-8") as f:
                 pass
         except FileNotFoundError:
             # train a small model
-            from train_tokenizer import train
+            from src.train_tokenizer import train
             corpus = "\n".join(lines)
             vocab_map = train(corpus, vocab_size=200)
-            with open("tokenizer.json", "w", encoding="utf-8") as f:
+            with open("data/tokenizer.json", "w", encoding="utf-8") as f:
                 json.dump({"vocab": vocab_map}, f, ensure_ascii=False)
 
-        t = Tokenizer("tokenizer.json")
+        t = Tokenizer("data/tokenizer.json")
         encoded = t.encode(lines)
         decoded = t.decode(encoded)
         self.assertEqual(decoded, lines)

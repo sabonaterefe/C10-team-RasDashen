@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import argparse
 import time
-from tokenizer import Tokenizer
+from src.tokenizer import Tokenizer
 
 
 def read_corpus(path: str) -> str:
@@ -36,7 +36,7 @@ def make_repeated_lines(corpus: str, target_chars: int):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--model", default="tokenizer.json")
+    parser.add_argument("--model", default="data/tokenizer.json")
     parser.add_argument("--input", default="debug_corpus.txt")
     parser.add_argument("--target-chars", type=int, default=2000000)
     args = parser.parse_args()

@@ -239,7 +239,7 @@ def main():
     parser.add_argument("--max-merge-steps", type=int, default=20000)
     parser.add_argument("--repeat", type=int, default=1)
     parser.add_argument("--max-token-length", type=int, default=MAX_TOKEN_LENGTH)
-    parser.add_argument("--out", default="tokenizer.json")
+    parser.add_argument("--out", default="data/tokenizer.json")
     args = parser.parse_args()
 
     corpus = read_corpus(args.input)

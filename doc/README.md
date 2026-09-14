@@ -15,14 +15,14 @@ This repository presents my implementation of a **SuperBPE tokenizer** for the C
 ## Experimental Workflow
 1. **Tokenizer training (development phase):**
    ```bash
-   python train_tokenizer.py --input debug_corpus.txt --vocab-size 20000 --repeat 10 --out tokenizer.json
+   python src/train_tokenizer.py --input debug_corpus.txt --vocab-size 20000 --repeat 10 --out data/tokenizer.json
    ```
 
    Use `--repeat` only for small development corpora; train on the actual target corpus when available.
 
 2. **Evaluation of round‑trip fidelity and token statistics:**
    ```bash
-   python evaluate.py --model tokenizer.json --input debug_corpus.txt
+   python src/evaluate.py --model data/tokenizer.json --input debug_corpus.txt
    ```
 
 3. **Validation through unit tests:**
@@ -39,7 +39,7 @@ Submissions must be packaged as a single archive containing `tokenizer.py` at th
 Use `package_submission.py` to create the submission archive, and `package_full_repo.py` to bundle the repository for sharing or backup.
 
 
-python package_submission.py --out submission.zip --model tokenizer.json
+python src/package_submission.py --out submission.zip --model data/tokenizer.json
 python package_full_repo.py --out project_bundle.zip
 
 
