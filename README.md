@@ -77,7 +77,7 @@ The repository includes the required cohort challenge materials in the `doc/` fo
 ### Contributors / Team Members
 
 - Sabona Terefe Bango
-- other teams quitted at the initial start
+- other teams quitted at the start of the project
 
 ### Mentors
 
